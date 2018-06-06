@@ -1,0 +1,21 @@
+import hashlib
+
+
+
+def passwordEncry(password):
+    '''
+    Used for Password MD5 Encryption
+    :param password:  User Input Password
+    :return: MD5 string
+    '''
+    md5 = hashlib.md5()
+    md5.update(password.encode('utf-8'))
+    return md5.hexdigest()
+
+
+def fileEncry(file):
+    md5 = hashlib.md5()
+    with open(file,'r') as f:
+        for line in f:
+            md5.update(line.encode('utf-8'))
+    return md5.hexdigest()
