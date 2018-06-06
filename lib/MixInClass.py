@@ -18,18 +18,15 @@ class GetFileDict(object):
 
     def getfileinfo(self,filename):
 
+        if not os.path.exists(filename):
+            return False
+
         file_name = os.path.basename(filename)
-        file_path  = os.path.dirname(filename)
-
-        if not file_path:
-            file_path = '/tmp'
-
         file_md5 = Encryption.fileEncry(filename)
         file_size = os.path.getsize(filename)
 
         file_dict = {
             'filename':file_name,
-            'filepath':file_path,
             'filemd5':file_md5,
             'filesize':file_size
         }

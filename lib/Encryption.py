@@ -1,5 +1,5 @@
 import hashlib
-
+import os
 
 
 def passwordEncry(password):
@@ -14,6 +14,8 @@ def passwordEncry(password):
 
 
 def fileEncry(file):
+    if not os.path.exists(file):
+        return False
     md5 = hashlib.md5()
     with open(file,'r') as f:
         for line in f:
