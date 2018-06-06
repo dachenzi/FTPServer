@@ -11,8 +11,7 @@ class FTPProcess(socketserver.BaseRequestHandler,BaleMixIn):
         print('client\'s Address: {0}'.format(self.client_address))
         while True:
             data_header = self.request.recv(4)
-            if not data_header:
-                break
+            if not data_header:break
             data_len = struct.unpack('i',data_header)[0]
             data_bytes = self.request.recv(data_len)
             data = data_bytes.decode('utf-8')
@@ -24,7 +23,7 @@ class FTPProcess(socketserver.BaseRequestHandler,BaleMixIn):
                 filenames = data.split(' ')[1]
                 self.get(filenames)
             else:
-                self.info(command)
+                self.info(data)
 
     def put(self,file):
         pass
@@ -32,13 +31,14 @@ class FTPProcess(socketserver.BaseRequestHandler,BaleMixIn):
     def get(self,file):
         pass
 
-    def info(self,command):
+    def info(self,data):
         '''
         Used for Execute Command
         :param command: User input Command
         :return: Command stdout/stderr info
         '''
-        command = subprocess.Popen(command,
+        data = data.split()
+        command = subprocess.Popen(*data,
                                    shell=True,
                                    stderr=subprocess.PIPE,
                                    stdout=subprocess.PIPE)

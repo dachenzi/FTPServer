@@ -19,7 +19,7 @@ class FTPClient(BaleMixIn):
         self.client.connect((self.ip,self.port))
         while True:
             command = input('>>:').split(' ')[0]
-            if not command:break
+            if not command:continue
             if command == 'put':
                 filenames = input('>>:').split(' ')[1]
                 self.put(filenames)
