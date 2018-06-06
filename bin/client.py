@@ -1,3 +1,6 @@
+import sys
+from os.path import abspath, dirname
+sys.path.insert(0, abspath(dirname(dirname(__file__))))
 from lib import FTPClientClass
 
 
