@@ -37,8 +37,8 @@ class FTPProcess(socketserver.BaseRequestHandler,BaleMixIn):
         :param command: User input Command
         :return: Command stdout/stderr info
         '''
-        data = data.split()
-        command = subprocess.Popen(*data,
+        print(data.split())
+        command = subprocess.Popen(data.split(),
                                    shell=True,
                                    stderr=subprocess.PIPE,
                                    stdout=subprocess.PIPE)
