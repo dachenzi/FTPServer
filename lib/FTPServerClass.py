@@ -5,9 +5,10 @@ import subprocess
 import os
 from lib.MixInClass import BaleMixIn
 from lib.Encryption import fileEncry
+from lib.MixInClass import GetFileDict
 
 
-class FTPProcess(socketserver.BaseRequestHandler,BaleMixIn):
+class FTPProcess(socketserver.BaseRequestHandler,BaleMixIn,GetFileDict):
 
     def handle(self):
         '''
@@ -24,11 +25,7 @@ class FTPProcess(socketserver.BaseRequestHandler,BaleMixIn):
             command = data.split(' ')[0]
             if hasattr(self,command):
                 func = getattr(self,command)
-                info = func(data)
-                header_len = self._struct(info.encode('utf-8'))
-                self.request.send(header_len)
-                self.request.send(info.encode('utf-8'))
-
+                func(data)
             else:
                 self.info(data)
 
@@ -85,12 +82,40 @@ class FTPProcess(socketserver.BaseRequestHandler,BaleMixIn):
         new_filesize = os.path.getsize(new_file)
 
         if new_filesize == old_filesize and new_filemd5 == old_filemd5:
-            return '上传文件成功'
+            info = '上传文件成功'
         else:
-            return '上传文件失败'
+            info = '上传文件失败'
+
+        # 发送上传结果
+        header_len = self._struct(info.encode('utf-8'))
+        self.request.send(header_len)
+        self.request.send(info.encode('utf-8'))
 
     def get(self,data):
-        pass
+
+        # 判断下载的文件是否存在
+        *other, file_path = data.split()[:2]
+        if not os.path.isfile(file_path):
+            info = '文件不存在,请重新输入'
+            header_len = self._struct(info.encode('utf-8'))
+            self.request.send(header_len)
+            self.request.send(info.encode('utf-8'))
+            return
+
+        # 发送文件信息
+        file_dic = self.getfileinfo(file_path)
+        file_dic_json = json.dumps(file_dic)
+        dic_header = self._struct(file_dic_json.encode('utf-8'))
+        self.request.send(dic_header)
+        self.request.send(file_dic_json.encode('utf-8'))
+        print(file_dic)
+
+        # 发送文件
+        with open(file_path,'r') as f:
+            data = f.read()
+        data_len = self._struct(data.encode('utf-8'))
+        self.request.send(data_len)
+        self.request.send(data.encode('gbk'))
 
 
 

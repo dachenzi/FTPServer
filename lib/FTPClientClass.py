@@ -1,4 +1,5 @@
 import socket
+import os
 import struct
 import json
 from lib.MixInClass import BaleMixIn,GetFileDict
@@ -79,6 +80,60 @@ class FTPClient(BaleMixIn,GetFileDict):
         print(data.decode('utf-8'))
 
     def get(self,data):
-        pass
+        '''
+        Download file from Server
+        :param data:  User input Command
+        :return: None
+        '''
 
+        # 获取下载路径(默认存放在桌面)
+        if len(data.split()) <= 2 :
+            filepath = r'C:\Users\Administrator\Desktop'
+        else:
+            filepath = data.split()[2]
 
+        # 发送get命令
+        header_len = self._struct(data.encode('utf-8'))
+        self.client.send(header_len)
+        self.client.send(data.encode('gbk'))
+
+        # 获取文件属性信息
+        dic_header = self.client.recv(4)
+        data_len = struct.unpack('i', dic_header)[0]
+        file_dic_json = self.client.recv(data_len)
+        try:
+            file_dic = json.loads(file_dic_json,encoding='utf-8')
+        except:
+            print(file_dic_json.decode('utf-8'))
+            return
+        old_filename = file_dic['filename']
+        old_filemd5 = file_dic['filemd5']
+        old_filesize = file_dic['filesize']
+        print(file_dic)
+
+        # 接受文件
+        data_header = self.client.recv(4)
+        data_len = struct.unpack('i', data_header)[0]
+        file_content = self.client.recv(data_len)
+
+        # 判断存储目录
+        if os.path.isdir(filepath):
+            new_file = os.path.join(filepath, old_filename)
+        else:
+            new_file = filepath
+
+        # 写文件
+        print(new_file)
+        with open(new_file,'w') as f:
+            f.write(file_content.decode('utf-8'))
+
+        # 检查文件
+        new_filemd5 = fileEncry(new_file)
+        new_filesize = os.path.getsize(new_file)
+
+        if new_filesize == old_filesize and new_filemd5 == old_filemd5:
+            info = '下载文件成功'
+        else:
+            info = '下载文件失败'
+
+        print('{},路径:{}'.format(info,new_file))
