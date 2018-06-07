@@ -14,6 +14,11 @@ def passwordEncry(password):
 
 
 def fileEncry(file):
+    '''
+    compute file md5 code
+    :param file:
+    :return:
+    '''
     if not os.path.exists(file):
         return False
     md5 = hashlib.md5()

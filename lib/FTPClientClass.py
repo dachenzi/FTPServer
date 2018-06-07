@@ -21,9 +21,9 @@ class FTPClient(BaleMixIn,GetFileDict):
         self.client = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.client.connect((self.ipaddr,self.port))
 
-        while True:
+        while True:  # 认证循环
             if self._auth():
-                while True:
+                while True:  # 通信循环
                     data = input('>>:').strip()
                     if data == 'exit':
                         sys.exit('Bye bye')
@@ -38,6 +38,10 @@ class FTPClient(BaleMixIn,GetFileDict):
                 continue
 
     def _auth(self):
+        '''
+        User Authorization
+        :return: Authorization result
+        '''
 
         # 接受菜单
         data_header = self.client.recv(4)

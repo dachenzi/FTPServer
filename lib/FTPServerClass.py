@@ -17,10 +17,10 @@ class FTPProcess(socketserver.BaseRequestHandler,BaleMixIn,GetFileDict):
         :return: None
         '''
         print('client\'s Address: {0}'.format(self.client_address))
-        while True:
+        while True:  # 认证循环
             try :
                 if self._Authorization():
-                    while True:
+                    while True:    # 通信循环
                         data_header = self.request.recv(4)
                         if not data_header:break
                         data_len = struct.unpack('i',data_header)[0]
@@ -99,6 +99,11 @@ time: {0}
             self.request.send(err)
 
     def put(self,data):
+        '''
+        client Upload file
+        :param data: User input command
+        :return: none
+        '''
 
         # 获取文件属性信息
         dic_header = self.request.recv(4)
@@ -140,6 +145,11 @@ time: {0}
         self.request.send(info.encode('utf-8'))
 
     def get(self,data):
+        '''
+        client download files
+        :param data: User input command
+        :return: none
+        '''
 
         # 判断下载的文件是否存在
         *other, file_path = data.split()[:2]
