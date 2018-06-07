@@ -35,7 +35,7 @@ class FTPClient(BaleMixIn,GetFileDict):
         :return: None
         '''
 
-        header_len = self._struct(command)
+        header_len = self._struct(command.encode('utf-8'))
         self.client.send(header_len)
         self.client.send(command.encode('gbk'))
         data_header = self.client.recv(4)
@@ -44,27 +44,31 @@ class FTPClient(BaleMixIn,GetFileDict):
         print(data.decode('gbk'))
 
     def put(self,data):
+        '''
+        Send File to Server
+        :param data: User input Execute
+        :return:
+        '''
 
         # 发送put命令
-        header_len = self._struct(data)
+        header_len = self._struct(data.encode('utf-8'))
         self.client.send(header_len)
         self.client.send(data.encode('gbk'))
 
         # 发送文件属性信息
         _,filepath,*other = data.split()
         file_dic = self.getfileinfo(filepath)
-        print(file_dic)
         if not file_dic:
             return 'File is not exists'
         file_dic_json = json.dumps(file_dic)
-        dic_header = self._struct(file_dic_json)
+        dic_header = self._struct(file_dic_json.encode('utf-8'))
         self.client.send(dic_header)
         self.client.send(file_dic_json.encode('utf-8'))
 
         # 发送文件
         with open(filepath,'r') as f:
             data = f.read()
-        data_len = self._struct(data)
+        data_len = self._struct(data.encode('utf-8'))
         self.client.send(data_len)
         self.client.send(data.encode('gbk'))
 

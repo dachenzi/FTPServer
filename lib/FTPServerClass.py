@@ -10,6 +10,10 @@ from lib.Encryption import fileEncry
 class FTPProcess(socketserver.BaseRequestHandler,BaleMixIn):
 
     def handle(self):
+        '''
+        Handling user requests
+        :return: None
+        '''
         print('client\'s Address: {0}'.format(self.client_address))
         while True:
             data_header = self.request.recv(4)
@@ -21,10 +25,10 @@ class FTPProcess(socketserver.BaseRequestHandler,BaleMixIn):
             if hasattr(self,command):
                 func = getattr(self,command)
                 info = func(data)
-                header_len = self._struct(info)
-                print(info)
+                header_len = self._struct(info.encode('utf-8'))
                 self.request.send(header_len)
                 self.request.send(info.encode('utf-8'))
+
             else:
                 self.info(data)
 
@@ -81,9 +85,9 @@ class FTPProcess(socketserver.BaseRequestHandler,BaleMixIn):
         new_filesize = os.path.getsize(new_file)
 
         if new_filesize == old_filesize and new_filemd5 == old_filemd5:
-            return '上传 {} 文件成功'.format(old_filename)
+            return '上传文件成功'
         else:
-            return '上传 {} 文件失败'.format(old_filename)
+            return '上传文件失败'
 
     def get(self,data):
         pass

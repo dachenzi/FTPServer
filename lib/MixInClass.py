@@ -10,7 +10,6 @@ class BaleMixIn(object):
         :param data: User transport Data
         :return: Package header
         '''
-
         data_header = struct.pack('i' ,len(data))
         return data_header
 
