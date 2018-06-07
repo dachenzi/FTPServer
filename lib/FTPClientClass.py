@@ -2,8 +2,9 @@ import socket
 import os
 import struct
 import json
+import sys
 from lib.MixInClass import BaleMixIn,GetFileDict
-from lib.Encryption import fileEncry
+from lib.Encryption import fileEncry,passwordEncry
 
 class FTPClient(BaleMixIn,GetFileDict):
 
@@ -19,15 +20,60 @@ class FTPClient(BaleMixIn,GetFileDict):
 
         self.client = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.client.connect((self.ipaddr,self.port))
+
         while True:
-            data = input('>>:').strip()
-            command = data.split(' ')[0]
-            if not command:continue
-            if hasattr(self,command):
-                func = getattr(self,command)
-                func(data)
+            if self._auth():
+                while True:
+                    data = input('>>:').strip()
+                    if data == 'exit':
+                        sys.exit('Bye bye')
+                    command = data.split(' ')[0]
+                    if not command:continue
+                    if hasattr(self,command):
+                        func = getattr(self,command)
+                        func(data)
+                    else:
+                        self.info(data)
             else:
-                self.info(data)
+                continue
+
+    def _auth(self):
+
+        # 接受菜单
+        data_header = self.client.recv(4)
+        data_len = struct.unpack('i', data_header)[0]
+        data = self.client.recv(data_len)
+        print(data.decode('utf-8'),end='')
+
+        # 输入用户名
+        username = input('Username:').strip()
+        password = input('Password:').strip()
+        password_md5 = passwordEncry(password)
+        userinfo = {
+            'username':username,
+            'password':password_md5
+        }
+        userinfo_json = json.dumps(userinfo)
+
+        # 发送登陆用户名密码
+        header_len = self._struct(userinfo_json.encode('utf-8'))
+        self.client.send(header_len)
+        self.client.send(userinfo_json.encode('utf-8'))
+
+        # 接受验证结果
+        data_header = self.client.recv(4)
+        data_len = struct.unpack('i', data_header)[0]
+        data = self.client.recv(data_len).decode('utf-8')
+        if data == 'True':
+            print('Welcome [ {} ] Login'.format(userinfo.get('username')))
+            return True
+        else:
+            user_input = input('Accounts or Password was Error,Retry? [y/n]')
+            if user_input == 'y' or user_input == 'Y':
+                return False
+            else:
+                print('Bye Bye')
+                sys.exit()
 
     def info(self,command):
         '''
@@ -36,13 +82,19 @@ class FTPClient(BaleMixIn,GetFileDict):
         :return: None
         '''
 
-        header_len = self._struct(command.encode('utf-8'))
+        if sys.platform == 'win32':
+            code = 'gbk'
+        else:
+            code = 'UTF-8'
+
+
+        header_len = self._struct(command.encode(code))
         self.client.send(header_len)
-        self.client.send(command.encode('gbk'))
+        self.client.send(command.encode(code))
         data_header = self.client.recv(4)
         data_len = struct.unpack('i', data_header)[0]
         data = self.client.recv(data_len)
-        print(data.decode('gbk'))
+        print(data.decode(code))
 
     def put(self,data):
         '''
@@ -54,7 +106,7 @@ class FTPClient(BaleMixIn,GetFileDict):
         # 发送put命令
         header_len = self._struct(data.encode('utf-8'))
         self.client.send(header_len)
-        self.client.send(data.encode('gbk'))
+        self.client.send(data.encode('utf-8'))
 
         # 发送文件属性信息
         _,filepath,*other = data.split()
@@ -71,7 +123,7 @@ class FTPClient(BaleMixIn,GetFileDict):
             data = f.read()
         data_len = self._struct(data.encode('utf-8'))
         self.client.send(data_len)
-        self.client.send(data.encode('gbk'))
+        self.client.send(data.encode('utf-8'))
 
         # 接受结果
         data_header = self.client.recv(4)
@@ -95,7 +147,7 @@ class FTPClient(BaleMixIn,GetFileDict):
         # 发送get命令
         header_len = self._struct(data.encode('utf-8'))
         self.client.send(header_len)
-        self.client.send(data.encode('gbk'))
+        self.client.send(data.encode('utf-8'))
 
         # 获取文件属性信息
         dic_header = self.client.recv(4)
@@ -109,7 +161,6 @@ class FTPClient(BaleMixIn,GetFileDict):
         old_filename = file_dic['filename']
         old_filemd5 = file_dic['filemd5']
         old_filesize = file_dic['filesize']
-        print(file_dic)
 
         # 接受文件
         data_header = self.client.recv(4)
@@ -123,7 +174,6 @@ class FTPClient(BaleMixIn,GetFileDict):
             new_file = filepath
 
         # 写文件
-        print(new_file)
         with open(new_file,'w') as f:
             f.write(file_content.decode('utf-8'))
 

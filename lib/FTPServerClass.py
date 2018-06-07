@@ -3,9 +3,10 @@ import struct
 import json
 import subprocess
 import os
-from lib.MixInClass import BaleMixIn
+import time
+from lib.MixInClass import BaleMixIn,GetFileDict
 from lib.Encryption import fileEncry
-from lib.MixInClass import GetFileDict
+from lib import UserCheck
 
 
 class FTPProcess(socketserver.BaseRequestHandler,BaleMixIn,GetFileDict):
@@ -17,17 +18,63 @@ class FTPProcess(socketserver.BaseRequestHandler,BaleMixIn,GetFileDict):
         '''
         print('client\'s Address: {0}'.format(self.client_address))
         while True:
-            data_header = self.request.recv(4)
-            if not data_header:break
-            data_len = struct.unpack('i',data_header)[0]
-            data_bytes = self.request.recv(data_len)
-            data = data_bytes.decode('utf-8')
-            command = data.split(' ')[0]
-            if hasattr(self,command):
-                func = getattr(self,command)
-                func(data)
-            else:
-                self.info(data)
+            try :
+                if self._Authorization():
+                    while True:
+                        data_header = self.request.recv(4)
+                        if not data_header:break
+                        data_len = struct.unpack('i',data_header)[0]
+                        data_bytes = self.request.recv(data_len)
+                        data = data_bytes.decode('utf-8')
+                        command = data.split(' ')[0]
+                        print(data)
+                        if hasattr(self,command):
+                            func = getattr(self,command)
+                            func(data)
+                        else:
+                            self.info(data)
+                else:
+                    continue
+            except:
+                break
+
+    def _Authorization(self):
+
+        '''
+        Account Authorization
+        :return: Authorization Result
+        '''
+
+        data = '''
+---------> FTP Server Login Authorization <----------
+time: {0}
+'''.format(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+
+        # 发送登陆认证菜单
+        header_len = self._struct(data.encode('utf-8'))
+        self.request.send(header_len)
+        self.request.send(data.encode('utf-8'))
+
+        # 接受用户名密码
+        userinfo_header = self.request.recv(4)
+        userinfo_len = struct.unpack('i', userinfo_header)[0]
+        userinfo_json = self.request.recv(userinfo_len)
+        userinfo = json.loads(userinfo_json,encoding='utf-8')
+
+        # 验证用户密码
+        if UserCheck.checkUser(userinfo.get('username'),userinfo.get('password')):
+            data = 'True'
+            header_len = self._struct(data.encode('utf-8'))
+            self.request.send(header_len)
+            self.request.send(data.encode('utf-8'))
+            print('{} Login at {}'.format(userinfo.get('username'),time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))))
+            return True
+        else:
+            data = 'False'
+            header_len = self._struct(data.encode('utf-8'))
+            self.request.send(header_len)
+            self.request.send(data.encode('utf-8'))
+            return False
 
     def info(self,data):
         '''
@@ -35,6 +82,7 @@ class FTPProcess(socketserver.BaseRequestHandler,BaleMixIn,GetFileDict):
         :param command: User input Command
         :return: Command stdout/stderr info
         '''
+
         command = subprocess.Popen(data.split(),
                                    shell=True,
                                    stderr=subprocess.PIPE,
@@ -108,14 +156,13 @@ class FTPProcess(socketserver.BaseRequestHandler,BaleMixIn,GetFileDict):
         dic_header = self._struct(file_dic_json.encode('utf-8'))
         self.request.send(dic_header)
         self.request.send(file_dic_json.encode('utf-8'))
-        print(file_dic)
 
         # 发送文件
         with open(file_path,'r') as f:
             data = f.read()
         data_len = self._struct(data.encode('utf-8'))
         self.request.send(data_len)
-        self.request.send(data.encode('gbk'))
+        self.request.send(data.encode('utf-8'))
 
 
 

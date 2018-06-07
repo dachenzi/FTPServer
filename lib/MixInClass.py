@@ -2,6 +2,7 @@ import struct
 import os
 from lib import Encryption
 
+
 class BaleMixIn(object):
 
     def _struct(self ,data):
@@ -30,3 +31,25 @@ class GetFileDict(object):
             'filesize':file_size
         }
         return  file_dict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
